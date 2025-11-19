@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "SimplifiedIQ-Workpad",
-    "slug": "SimplifiedIQ-Workpad",
+    "slug": "simplifiediq-tab",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/icon.png",
@@ -19,7 +19,8 @@
         "monochromeImage": "./src/assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.jimohsodiq.SimplifiedIQWorkpad"
     },
     "web": {
       "output": "static",
@@ -43,6 +44,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "108dfe57-05d2-4016-afd1-84a0c9bc58c2"
+      }
+    },
+    "owner": "jimoh-sodiq"
   }
 }
