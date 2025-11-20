@@ -3,9 +3,9 @@ import { DrawingTool, DrawingToolOptions, DrawingToolProperty } from "@/types";
 
 interface Store extends Record<DrawingTool, DrawingToolProperty> {
   activeTool: DrawingTool;
-  totalPages: number;
   currentPage: number;
   pages: Record<number, UniquePageData>;
+  totalPages: number;
   undoStack: Array<any>;
   redoStack: Array<any>;
   setActiveTool: (tool: DrawingTool) => void;
@@ -13,7 +13,9 @@ interface Store extends Record<DrawingTool, DrawingToolProperty> {
   pushStroke: (stroke: any) => void;
   undo: () => void;
   redo: () => void;
-  clearCanvas: () => void;
+  clearPage: () => void;
+  addPage: () => void;
+  goToPage: (i: number) => void;
 }
 
 interface UniquePageData {
@@ -21,14 +23,13 @@ interface UniquePageData {
   redoStack: Array<any>;
 }
 
-export const useToolStore = create<Store>((set) => ({
+export const useToolStore = create<Store>((set, get) => ({
   activeTool: "ballpoint" as DrawingTool,
 
-  totalPages: 1,
   currentPage: 1,
 
   pages: {
-    0: { undoStack: [], redoStack: [] },
+    1: { undoStack: [], redoStack: [] },
   },
 
   activeToolGroup: "scribble" as DrawingToolOptions,
@@ -58,6 +59,12 @@ export const useToolStore = create<Store>((set) => ({
   undoStack: [],
   redoStack: [],
 
+  // GETTERS
+
+  get totalPages() {
+    return Object.keys(get().pages).length;
+  },
+
   // ACTIONS
   setActiveTool: (tool: DrawingTool) => set({ activeTool: tool }),
 
@@ -68,7 +75,7 @@ export const useToolStore = create<Store>((set) => ({
 
   addPage: () =>
     set((state) => {
-      const newIndex = state.totalPages;
+      const newIndex = state.totalPages + 1;
       return {
         totalPages: newIndex + 1,
         currentPage: newIndex,
@@ -79,44 +86,82 @@ export const useToolStore = create<Store>((set) => ({
       };
     }),
 
-  goToPage: (pageIndex: number) =>
-    set((state) => ({
-      currentPage: Math.max(0, Math.min(state.totalPages - 1, pageIndex)),
-    })),
-
-    
-  pushStroke: (stroke: any) =>
-    set((state) => ({
-      undoStack: [...state.undoStack, stroke],
-      redoStack: [],
-    })),
-
-  undo: () =>
+  goToPage: (page: number) =>
     set((state) => {
-      if (state.undoStack.length === 0) return state;
+      if (!state.pages[page]) {
+        state.pages[page] = {
+          undoStack: [],
+          redoStack: [],
+        };
+      }
+      return { currentPage: page };
+    }),
 
-      const popped = state.undoStack[state.undoStack.length - 1];
+  pushStroke: (stroke) =>
+    set((state) => {
+      const page = state.currentPage;
+      const pageData = state.pages[page];
+
       return {
-        undoStack: state.undoStack.slice(0, -1),
-        redoStack: [...state.redoStack, popped],
+        pages: {
+          ...state.pages,
+          [page]: {
+            undoStack: [...pageData.undoStack, stroke],
+            redoStack: [],
+          },
+        },
       };
     }),
 
-  redo: () =>
-    set((state) => {
-      if (state.redoStack.length === 0) return state;
+  undo: () => {
+    const state = get();
+    const page = state.currentPage;
+    const pageData = state.pages[page];
 
-      const popped = state.redoStack[state.redoStack.length - 1];
-      return {
-        redoStack: state.redoStack.slice(0, -1),
-        undoStack: [...state.undoStack, popped],
-      };
-    }),
+    if (pageData.undoStack.length === 0) return;
 
-  clearCanvas: () => {
-    set((state) => ({
-      undoStack: [],
-      redoStack: [],
-    }));
+    const popped = pageData.undoStack.at(-1);
+
+    set({
+      pages: {
+        ...state.pages,
+        [page]: {
+          undoStack: pageData.undoStack.slice(0, -1),
+          redoStack: [...pageData.redoStack, popped],
+        },
+      },
+    });
+  },
+
+  redo: () => {
+    const state = get();
+    const page = state.currentPage;
+    const pageData = state.pages[page];
+
+    if (pageData.redoStack.length === 0) return;
+
+    const popped = pageData.redoStack.at(-1);
+
+    set({
+      pages: {
+        ...state.pages,
+        [page]: {
+          redoStack: pageData.redoStack.slice(0, -1),
+          undoStack: [...pageData.undoStack, popped],
+        },
+      },
+    });
+  },
+
+  clearPage: () => {
+    const state = get();
+    const page = state.currentPage;
+
+    set({
+      pages: {
+        ...state.pages,
+        [page]: { undoStack: [], redoStack: [] },
+      },
+    });
   },
 }));

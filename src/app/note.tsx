@@ -43,8 +43,13 @@ interface CurrentPathData {
 
 export default function NoteScreen() {
   const router = useRouter();
-  const undoStack = useToolStore((s) => s.undoStack);
-  const redoStack = useToolStore((s) => s.redoStack);
+  const currentPage = useToolStore((s) => s.currentPage);
+  const totalPages = useToolStore((s) => s.totalPages);
+  const pages = useToolStore((s) => s.pages);
+  const goToPage = useToolStore((s) => s.goToPage);
+  const addPage = useToolStore((s) => s.addPage);
+  const undoStack = pages[currentPage].undoStack;
+  const redoStack = pages[currentPage].redoStack;
   const activeTool = useToolStore((s) => s.activeTool);
   const store = useToolStore();
   const activeToolSettings = store[activeTool];
@@ -52,7 +57,7 @@ export default function NoteScreen() {
   const undo = useToolStore((s) => s.undo);
   const redo = useToolStore((s) => s.redo);
   const setActiveTool = useToolStore((s) => s.setActiveTool);
-  const clearCanvas = useToolStore((s) => s.clearCanvas);
+  const clearCanvas = useToolStore((s) => s.clearPage);
   const updateTool = useToolStore((s) => s.updateTool);
 
   const [currentPath, setCurrentPath] = useState<CurrentPathData | null>(null);
@@ -192,7 +197,7 @@ export default function NoteScreen() {
                   path={item.path}
                   color={item.color}
                   strokeWidth={item.strokeWidth}
-                  style='stroke'
+                  style="stroke"
                   strokeJoin="round"
                   strokeCap="round"
                 />
@@ -322,11 +327,19 @@ export default function NoteScreen() {
                   </View>
                 </ScrollView>
                 <View className="flex-row items-center gap-3">
-                  <TouchableOpacity>
-                    <CaretLeftIcon color="#6b7280" size={18} />
+                  <TouchableOpacity
+                    disabled={currentPage <= 1}
+                    onPress={() => goToPage(currentPage - 1)}
+                  >
+                    <CaretLeftIcon
+                      color={currentPage <= 1 ? "#6b7280" : "white"}
+                      size={18}
+                    />
                   </TouchableOpacity>
-                  <Text className="text-white text-xl tracking-widest">1</Text>
-                  <TouchableOpacity>
+                  <Text className="text-white text-xl tracking-widest">
+                    {currentPage}
+                  </Text>
+                  <TouchableOpacity onPress={() => goToPage(currentPage + 1)}>
                     <CaretRightIcon color="white" size={18} />
                   </TouchableOpacity>
                 </View>
