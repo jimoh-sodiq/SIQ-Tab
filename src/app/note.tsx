@@ -1,5 +1,23 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { colors } from "@/assets/colors";
+import NoteHeader from '@/components/note/NoteHeader';
+import { supportedNoteColors } from "@/lib/utils";
+import { useToolStore } from "@/store/useToolStore";
+import { DrawingTool } from "@/types";
+import Slider from "@react-native-community/slider";
+import {
+  BlendMode,
+  Canvas,
+  Group,
+  Line,
+  Mask,
+  Path,
+  Skia,
+  SkPath,
+  useCanvasSize,
+} from "@shopify/react-native-skia";
+import * as FileSystem from "expo-file-system/legacy";
+import { useRouter } from "expo-router";
+import { shareAsync } from 'expo-sharing';
 import {
   ArrowBendUpLeftIcon,
   ArrowBendUpRightIcon,
@@ -11,29 +29,16 @@ import {
   PenIcon,
   ScribbleIcon,
 } from "phosphor-react-native";
-import { useRouter } from "expo-router";
-import { colors } from "@/assets/colors";
-import { useState, useRef } from "react";
-import {
-  Canvas,
-  useCanvasSize,
-  Skia,
-  Path,
-  SkPath,
-  Line,
-} from "@shopify/react-native-skia";
+import { useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import {
   Gesture,
   GestureDetector,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
-import { DrawingTool } from "@/types";
 import Popover from "react-native-popover-view";
-import { useToolStore } from "@/store/useToolStore";
-import * as FileSystem from "expo-file-system";
+import { SafeAreaView } from "react-native-safe-area-context";
 import ColorPicker, { Swatches } from "reanimated-color-picker";
-import { supportedNoteColors } from "@/lib/utils";
-import Slider from "@react-native-community/slider";
 
 interface CurrentPathData {
   path: SkPath;
@@ -59,6 +64,7 @@ export default function NoteScreen() {
   const setActiveTool = useToolStore((s) => s.setActiveTool);
   const clearCanvas = useToolStore((s) => s.clearPage);
   const updateTool = useToolStore((s) => s.updateTool);
+  const [isReadMode, setIsReadMode] = useState(false)
 
   const [currentPath, setCurrentPath] = useState<CurrentPathData | null>(null);
   const [showSnapshotMessage, setShowSnapshotMessage] = useState(false);
@@ -69,11 +75,21 @@ export default function NoteScreen() {
     size: { width },
   } = useCanvasSize();
 
+  const { width: windowWidth } = useWindowDimensions()
+
   const computedToolClass = (tool: DrawingTool) => {
     return activeTool == tool
       ? "rounded-full bg-stone-600   w-fit p-2"
       : "rounded-full   w-fit p-2";
   };
+
+  const swipeGesture = Gesture.Fling().onStart(({ x, y }) => {
+
+  }).onEnd(() => {
+    if (isReadMode) {
+      goToPage(currentPage + 1)
+    }
+  })
 
   const drawingGesture = Gesture.Pan()
     .onStart(({ x, y }) => {
@@ -81,8 +97,9 @@ export default function NoteScreen() {
       newPath.moveTo(x, y);
       const pathData = {
         path: newPath,
-        color: activeToolSettings.color,
+        color: activeTool == DrawingTool.eraser ? 'white' : activeToolSettings.color,
         strokeWidth: activeToolSettings.strokeWidth,
+        blendMode: DrawingTool.eraser ? BlendMode.Clear : BlendMode.SrcOver
       };
       setCurrentPath(pathData as any);
     })
@@ -99,42 +116,28 @@ export default function NoteScreen() {
       }
     })
     .runOnJS(true);
-
-  const takeCanvasSnapshot = async () => {
+  const saveImage = async () => {
     const image = canvasRef.current?.makeImageSnapshot();
-    if (!image) {
-      Alert.alert("Failed to export image, please try again");
-      return;
-    }
+    if (image) {
+      const base64data = image.encodeToBase64();
+      const filename = `skia_snapshot_${Date.now()}.png`;
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
 
-    try {
-      const bytes = image.encodeToBytes();
-      const filePath = `siq-note-${Date.now()}.jpg`;
+      try {
+        await FileSystem.writeAsStringAsync(fileUri, base64data, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        await shareAsync(fileUri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share your page as image',
+          UTI: `Page-${currentPage}.png`,
+        });
 
-      // const base64 = Buffer.from(bytes).toString("base64");
-      const file = new FileSystem.File(
-        new FileSystem.Directory(FileSystem.Paths.document),
-        filePath
-      );
-      file.create({
-        intermediates: true,
-      });
-      file.write(bytes, { encoding: "base64" });
-
-      // new FileSystem.File(FileSystem.Paths.document, "SIQ-Notes", filePath)
-      //   .create()
-      //   .write(bytes, {
-      //     encoding: "base64",
-      //   });
-      console.log("file", file.uri);
-
-      setShowSnapshotMessage(true);
-      setTimeout(() => setShowSnapshotMessage(false), 3000);
-
-      // console.log("Saved at:", filePath);
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Something went wrong while saving image");
+      } catch (e) {
+        Alert.alert('Error', 'Failed to save image');
+      }
+    } else {
+      Alert.alert('Error', 'Could not create image snapshot');
     }
   };
 
@@ -148,29 +151,11 @@ export default function NoteScreen() {
   return (
     <GestureHandlerRootView>
       <SafeAreaView className="bg-black flex-1 relative">
-        <View className="px-5 py-2 flex-row items-center gap-4 justify-between">
-          <View className="flex-row items-center gap-2">
-            <TouchableOpacity onPress={() => router.back()}>
-              <CaretLeftIcon color="white" size={22} />
-            </TouchableOpacity>
-            <Text className="text-white tracking-widest text-lg">Welcome</Text>
-          </View>
-          <View className="flex flex-row items-center gap-4">
-            <TouchableOpacity onPress={clearCanvas}>
-              <Text className="text-secondary underline tracking widest">
-                Clear page
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <ArrowsOutSimpleIcon size={22} color="white" />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <NoteHeader />
         <View className="flex-1 bg-stone-800 flex justify-center">
           {/* <View className="h-[10%]" /> */}
 
-          {/* #d6d3d1 */}
-          <GestureDetector gesture={drawingGesture}>
+          <GestureDetector gesture={isReadMode ? swipeGesture : drawingGesture}>
             <Canvas
               style={{
                 flex: 1,
@@ -178,18 +163,6 @@ export default function NoteScreen() {
               }}
               ref={canvasRef}
             >
-              {Array.from({ length: 100 }).map((_, i) => {
-                const y = i * 40; // line spacing (adjust)
-                return (
-                  <Line
-                    key={`line-${i}`}
-                    p1={{ x: 0, y }}
-                    p2={{ x: width, y }}
-                    color="rgba(0,0,255,0.3)" // very light blue notebook line
-                    strokeWidth={1}
-                  />
-                );
-              })}
               {/* Render history strokes */}
               {undoStack.map((item, i) => (
                 <Path
@@ -198,8 +171,6 @@ export default function NoteScreen() {
                   color={item.color}
                   strokeWidth={item.strokeWidth}
                   style="stroke"
-                  strokeJoin="round"
-                  strokeCap="round"
                 />
               ))}
 
@@ -212,9 +183,24 @@ export default function NoteScreen() {
                   strokeWidth={activeToolSettings.strokeWidth}
                 />
               )}
+
+              {Array.from({ length: 100 }).map((_, i) => {
+                const y = i * 40; // line spacing (adjust)
+                return (
+                  <Line
+                    key={`line-${i}`}
+                    p1={{ x: 0, y }}
+                    p2={{ x: windowWidth, y }}
+                    color="rgba(0,0,255,0.3)" // very light blue notebook line
+                    strokeWidth={1}
+                  />
+                );
+              })}
+
             </Canvas>
           </GestureDetector>
 
+        </View>
           <View className="flex justify-end min-h-[8%]">
             {showSnapshotMessage && (
               <Text className="px-5 pb-2 text-sm text-green-600 font-medium tracking-widest">
@@ -294,7 +280,7 @@ export default function NoteScreen() {
                       />
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={takeCanvasSnapshot}
+                      onPress={saveImage}
                       className="w-fit p-2"
                     >
                       <ImageIcon size={22} color={colors.secondary} />
@@ -346,7 +332,6 @@ export default function NoteScreen() {
               </View>
             </View>
           </View>
-        </View>
       </SafeAreaView>
     </GestureHandlerRootView>
   );

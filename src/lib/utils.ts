@@ -14,13 +14,13 @@ export const TOOL_MAP: Partial<Record<DrawingTool, any>> = {
 
 export const supportedNoteColors = [
   "#000000", // black
-  "#0A7A0A", // deep green
-  "#004FCC", // deep blue
-  "#A00000", // deep red
-  "#DC6E00", // dark orange
-  "#BBAA00", // muted yellow
-  "#5A2A80", // dark purple
-  "#008C8C", // deep cyan
-  "#D17A9B", // muted pink
-  "#5A3A1F", // dark brown
+  "#00A000", // green
+  "#0077FF", // blue
+  "#FF0000", // red
+  "#FF7F00", // orange
+  "#FFFF00", // yellow
+  "#800080", // purple
+  "#00FFFF", // cyan
+  "#FFC0CB", // pink
+  "#8B4513", // brown
 ];
