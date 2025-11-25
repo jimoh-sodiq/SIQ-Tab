@@ -38,3 +38,52 @@ export interface DrawingToolProperty {
   scale?: number;
   style?: "fill" | "stroke";
 }
+
+
+export interface DrawingStrokeSendEventData {
+  type: "stroke-start" | "stroke-end" | "stroke-move";
+  page: number;
+  x: number;
+  y: number;
+  color: string;
+  strokeWidth: number;
+  tool: DrawingTool;
+  strokeId: string;
+  mode: "draw" | "erase";
+}
+
+export interface StrokeStartEvent {
+  type: "stroke_start";
+  page: number;
+  x: number;
+  y: number;
+  color: string;
+  strokeWidth: number;
+  tool: DrawingTool;
+  strokeId: string;
+  mode: "draw" | "erase";
+}
+
+export interface StokeMoveEvent {
+  type: "stroke_move";
+  x: number;
+  y: number;
+  strokeId: string;
+
+}
+
+export interface StrokeEndEvent {
+  type: "stroke_end";
+  strokeId: string;
+}
+
+export interface UndoRedoEvent {
+  type: "undo" | "redo";
+}
+
+export interface ClearPageEvent {
+  type: "clear_page";
+  page: number;
+}
+
+export type DrawingEvent = StrokeStartEvent | StokeMoveEvent | StrokeEndEvent | UndoRedoEvent | ClearPageEvent;
