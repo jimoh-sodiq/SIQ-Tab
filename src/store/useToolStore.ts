@@ -1,5 +1,5 @@
-import { create } from "zustand";
 import { DrawingTool, DrawingToolOptions, DrawingToolProperty } from "@/types";
+import { create } from "zustand";
 
 interface Store extends Record<DrawingTool, DrawingToolProperty> {
   activeTool: DrawingTool;
@@ -8,6 +8,8 @@ interface Store extends Record<DrawingTool, DrawingToolProperty> {
   totalPages: number;
   undoStack: Array<any>;
   redoStack: Array<any>;
+  ipCode: string;
+  setIpCode: (code: string) => void;
   setActiveTool: (tool: DrawingTool) => void;
   updateTool: (tool: DrawingTool, payload: DrawingToolProperty) => void;
   pushStroke: (stroke: any) => void;
@@ -25,6 +27,7 @@ interface UniquePageData {
 
 export const useToolStore = create<Store>((set, get) => ({
   activeTool: "ballpoint" as DrawingTool,
+  ipCode: "",
 
   currentPage: 1,
 
@@ -66,6 +69,7 @@ export const useToolStore = create<Store>((set, get) => ({
   },
 
   // ACTIONS
+  setIpCode: (code: string) => set({ ipCode: code }),
   setActiveTool: (tool: DrawingTool) => set({ activeTool: tool }),
 
   updateTool: (tool: DrawingTool, payload: Partial<DrawingToolProperty>) =>
@@ -96,6 +100,7 @@ export const useToolStore = create<Store>((set, get) => ({
       }
       return { currentPage: page };
     }),
+
 
   pushStroke: (stroke) =>
     set((state) => {

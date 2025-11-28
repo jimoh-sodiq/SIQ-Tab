@@ -28,7 +28,7 @@ import {
   ScribbleIcon
 } from "phosphor-react-native";
 import { useState } from "react";
-import { Alert, ScrollView, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { Alert, ScrollView, StatusBar, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import {
   Gesture,
   GestureDetector,
@@ -37,7 +37,6 @@ import {
 import Popover from "react-native-popover-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ColorPicker, { Swatches } from "reanimated-color-picker";
-import * as Crypto from "expo-crypto";
 
 interface CurrentPathData {
   path: SkPath;
@@ -68,9 +67,13 @@ export default function NoteScreen() {
   const [currentPath, setCurrentPath] = useState<CurrentPathData | null>(null);
   const [showSnapshotMessage, setShowSnapshotMessage] = useState(false);
 
-  const { send } = useNoteWebSocket((msg) => {
+  const { send, connected } = useNoteWebSocket((msg) => {
     console.log("SERVER MESSAGE -----", msg)
-  })
+  });
+
+  // const { send } = useNoteWebSocket((msg) => {
+  //   console.log("SERVER MESSAGE -----", msg)
+  // }, ipCode)
 
   // DRAWING CANVAS
   const {
@@ -181,62 +184,61 @@ export default function NoteScreen() {
   return (
     <GestureHandlerRootView>
       <SafeAreaView className="bg-black flex-1 relative">
+        <StatusBar barStyle='light-content' />
+
         <NoteHeader clearEvent={() => send({ type: "clear_page", page: currentPage })} />
         <View className="flex-1 bg-stone-800 flex justify-center">
           {/* <View className="h-[10%]" /> */}
 
-          <GestureDetector gesture={isReadMode ? swipeGesture : drawingGesture}>
-            <Canvas
-              style={{
-                flex: 1,
-                backgroundColor: "white",
-              }}
-              ref={canvasRef}
-            >
-              {/* Render history strokes */}
-              {undoStack.map((item, i) => (
-                <Path
-                  key={i}
-                  path={item.path}
-                  color={item.color}
-                  strokeWidth={item.strokeWidth}
-                  style="stroke"
-                />
-              ))}
-
-              {/* Live stroke */}
-              {currentPath && (
-                <Path
-                  path={currentPath.path}
-                  color={activeToolSettings.color}
-                  style="stroke"
-                  strokeWidth={activeToolSettings.strokeWidth}
-                />
-              )}
-
-              {Array.from({ length: 100 }).map((_, i) => {
-                const y = i * 40; // line spacing (adjust)
-                return (
-                  <Line
-                    key={`line-${i}`}
-                    p1={{ x: 0, y }}
-                    p2={{ x: windowWidth, y }}
-                    color="rgba(0,0,255,0.3)" // very light blue notebook line
-                    strokeWidth={1}
+          <View className="flex-1 max-w-[800px] mx-auto border-[1px] w-full">
+            <GestureDetector gesture={isReadMode ? swipeGesture : drawingGesture}>
+              <Canvas
+                style={{
+                  flex: 1,
+                  backgroundColor: "white",
+                }}
+                ref={canvasRef}
+              >
+                {/* Render history strokes */}
+                {undoStack.map((item, i) => (
+                  <Path
+                    key={i}
+                    path={item.path}
+                    color={item.color}
+                    strokeWidth={item.strokeWidth}
+                    style="stroke"
                   />
-                );
-              })}
+                ))}
 
-            </Canvas>
-          </GestureDetector>
+                {/* Live stroke */}
+                {currentPath && (
+                  <Path
+                    path={currentPath.path}
+                    color={activeToolSettings.color}
+                    style="stroke"
+                    strokeWidth={activeToolSettings.strokeWidth}
+                  />
+                )}
+
+                {Array.from({ length: 100 }).map((_, i) => {
+                  const y = i * 40; // line spacing (adjust)
+                  return (
+                    <Line
+                      key={`line-${i}`}
+                      p1={{ x: 0, y }}
+                      p2={{ x: windowWidth, y }}
+                      color="rgba(0,0,255,0.3)" // very light blue notebook line
+                      strokeWidth={1}
+                    />
+                  );
+                })}
+
+              </Canvas>
+            </GestureDetector>
+          </View>
 
         </View>
         <View className="flex justify-end min-h-[8%]">
-          {showSnapshotMessage && (
-            <Text className="px-5 pb-2 text-sm text-green-600 font-medium tracking-widest">
-              Image snapshot saved to documents
-            </Text>
-          )}
           <View className="flex-row w-full items-center justify-between">
             <View className=" flex-row items-center px-5 py-1 gap-2">
               <TouchableOpacity className="rounded-full border-stone-600 border-[1px]   w-fit p-2">

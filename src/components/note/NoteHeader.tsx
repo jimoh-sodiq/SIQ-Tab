@@ -1,11 +1,16 @@
 import { View, TouchableOpacity, Text } from "react-native"
-import { ArrowsOutSimpleIcon, CaretLeftIcon } from 'phosphor-react-native'
+import { CaretLeftIcon, PlugsConnectedIcon, PlugsIcon } from 'phosphor-react-native'
 import { useRouter } from 'expo-router'
 import { useToolStore } from '@/store/useToolStore'
+import { useNoteWebSocket } from '@/hooks/useNoteWebSocket'
 
 export default function NoteHeader({ clearEvent }: { clearEvent: (data?: any) => void }) {
     const router = useRouter()
     const clearCanvas = useToolStore((s) => s.clearPage);
+
+    const { send, connected } = useNoteWebSocket((msg) => {
+        console.log("SERVER MESSAGE -----", msg)
+    });
 
     const handleClearCanvas = () => {
         clearCanvas()
@@ -19,6 +24,8 @@ export default function NoteHeader({ clearEvent }: { clearEvent: (data?: any) =>
                     <CaretLeftIcon color="white" size={22} />
                 </TouchableOpacity>
                 <Text className="text-white tracking-widest text-lg">Welcome</Text>
+                <View className="flex items-center justify-center px-5">{
+                    connected ? <PlugsConnectedIcon color='green' weight='fill' size={22} /> : <PlugsIcon color='red' weight='fill' size={22} />}</View>
             </View>
             <View className="flex flex-row items-center gap-4">
                 <TouchableOpacity onPress={handleClearCanvas}>
@@ -26,9 +33,9 @@ export default function NoteHeader({ clearEvent }: { clearEvent: (data?: any) =>
                         Clear page
                     </Text>
                 </TouchableOpacity>
-                <TouchableOpacity>
+                {/* <TouchableOpacity>
                     <ArrowsOutSimpleIcon size={22} color="white" />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
             </View>
         </View>
     </>
