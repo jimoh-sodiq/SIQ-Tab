@@ -21,8 +21,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.jimohsodiq.SimplifiedIQWorkpad",
-      "permissions": ["INTERNET"],
-      "networkSecurityConfig": "./network_security_config.xml"
+      "permissions": ["INTERNET"]
     },
     "web": {
       "output": "static",
@@ -30,6 +29,7 @@
     },
     "plugins": [
       "expo-router",
+      "./src/plugins/network-security-config.js",
       [
         "expo-splash-screen",
         {
