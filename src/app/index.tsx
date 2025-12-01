@@ -2,7 +2,6 @@ import { Text, View, TouchableOpacity, TextInput, KeyboardAvoidingView, StatusBa
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ScrollView } from 'react-native';
-import { useToolStore } from "@/store/useToolStore";
 import { ArrowDownIcon, PlugsConnectedIcon } from 'phosphor-react-native';
 import { useWSStore } from '@/store/useWSStore';
 
@@ -12,6 +11,7 @@ export default function Index() {
   const setEncodedIp = useWSStore(s => s.setEncodedIp);
   const connect = useWSStore(s => s.connect);
   const disconnect = useWSStore(s => s.disconnect);
+  const isConnected = useWSStore(s => s.connected);
 
   const handleConnect = () => {
     if (!ipCode || ipCode.length == 0) {
@@ -19,6 +19,10 @@ export default function Index() {
       return;
     }
     connect()
+    if (!isConnected) {
+      Alert.alert("Error", "failed to create connection, try a differenct code")
+      return;
+    }
     router.push("/note")
   }
 

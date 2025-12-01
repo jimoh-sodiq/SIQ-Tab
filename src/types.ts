@@ -72,6 +72,14 @@ export interface StokeMoveEvent {
 
 }
 
+export interface SingleRemoteStroke {
+  strokeId?: string;
+  color: string;
+  type?: string;
+  strokeWidth: number;
+  points: { x: number; y: number }[];
+}
+
 export interface StrokeEndEvent {
   type: "stroke_end";
   strokeId: string;
@@ -86,4 +94,17 @@ export interface ClearPageEvent {
   page: number;
 }
 
-export type DrawingEvent = StrokeStartEvent | StokeMoveEvent | StrokeEndEvent | UndoRedoEvent | ClearPageEvent;
+export interface ClearDesktopEvent {
+  type: "clear_desktop";
+  page: number;
+}
+
+export interface UpdateDesktopEvent {
+  type: "update_desktop";
+  page: number;
+  strokeHistory: SingleRemoteStroke[]
+}
+
+
+
+export type DrawingEvent = StrokeStartEvent | StokeMoveEvent | StrokeEndEvent | UndoRedoEvent | ClearPageEvent | ClearDesktopEvent | UpdateDesktopEvent;

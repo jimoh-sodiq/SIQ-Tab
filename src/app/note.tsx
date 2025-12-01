@@ -190,7 +190,7 @@ export default function NoteScreen() {
         <View className="flex-1 bg-stone-800 flex justify-center">
           {/* <View className="h-[10%]" /> */}
 
-          <View className="flex-1 max-w-[800px] mx-auto border-[1px] w-full">
+          <View className="flex-1 max-w-[960px] mx-auto border-[1px] w-full">
             <GestureDetector gesture={isReadMode ? swipeGesture : drawingGesture}>
               <Canvas
                 style={{
