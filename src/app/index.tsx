@@ -20,7 +20,7 @@ export default function Index() {
     }
     connect()
     if (!isConnected) {
-      Alert.alert("Error", "failed to create connection, try a differenct code")
+      Alert.alert("Error", "failed to create connection, try a different code")
       return;
     }
     router.push("/note")
@@ -32,8 +32,8 @@ export default function Index() {
       <ScrollView className='flex-1'>
         <KeyboardAvoidingView behavior='position' className='flex-1 jusify-between'>
           <View className="p-5 items-center justify-center">
-            <Image source={require("@/assets/images/SIQlogo.png")} />
-            <Text className='italic text-2xl tracking-widest font-medium text-center text-primary'>Writing tab</Text>
+            <Image className='h-20 w-[210px] object' resizeMode='contain' source={require("@/assets/images/SIQlogo.png")} />
+            <Text className='italic text-xl tracking-widest font-medium text-center text-primary'>Writing tab</Text>
           </View>
           <View className='gap-2 mb-8'>
             <Text className='text-gray-200 tracking-widest font-medium text-lg text-center text-stone-800 underline'>Instructions</Text>

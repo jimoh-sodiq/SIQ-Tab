@@ -1,16 +1,10 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { BallpointTool } from "../hooks/ballpoint";
 import { DrawingTool } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-export const TOOL_MAP: Partial<Record<DrawingTool, any>> = {
-  ballpoint: BallpointTool,
-};
-
 
 export const supportedNoteColors = [
   "#000000", // black

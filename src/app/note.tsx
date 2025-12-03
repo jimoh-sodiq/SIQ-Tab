@@ -235,6 +235,7 @@ export default function NoteScreen() {
 
               </Canvas>
             </GestureDetector>
+            {/* Scrollbar here */}
           </View>
 
         </View>
