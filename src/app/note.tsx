@@ -6,7 +6,6 @@ import { useToolStore } from "@/store/useToolStore";
 import { DrawingTool, StrokeStartEvent } from "@/types";
 import Slider from "@react-native-community/slider";
 import {
-  BlendMode,
   Canvas,
   Line,
   Path,
@@ -22,12 +21,13 @@ import {
   ArrowBendUpRightIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  DotsNineIcon,
   EraserIcon,
   ImageIcon,
   PenIcon,
   ScribbleIcon
 } from "phosphor-react-native";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, ScrollView, StatusBar, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import {
   Gesture,
@@ -181,16 +181,22 @@ export default function NoteScreen() {
     });
   };
 
+  const scrollerRef = useRef<ScrollView>(null)
+
+  useEffect(() => {
+    scrollerRef.current?.scrollTo({x: 0, y: 0, animated: false})
+  }, [currentPage])
+
   return (
     <GestureHandlerRootView>
       <SafeAreaView className="bg-black flex-1 relative">
         <StatusBar barStyle='light-content' />
 
         <NoteHeader clearEvent={() => send({ type: "clear_page", page: currentPage })} />
-        <View className="flex-1 bg-stone-800 flex justify-center">
+        <ScrollView ref={scrollerRef} indicatorStyle='white' persistentScrollbar={true} showsVerticalScrollIndicator={true} contentContainerStyle={{ justifyContent: "center" }} >
           {/* <View className="h-[10%]" /> */}
 
-          <View className="flex-1 max-w-[960px] mx-auto border-[1px] w-full">
+          <View className="flex-1 max-w-[960px] h-[960px] flex-row mx-auto border-[1px] w-full">
             <GestureDetector gesture={isReadMode ? swipeGesture : drawingGesture}>
               <Canvas
                 style={{
@@ -236,9 +242,14 @@ export default function NoteScreen() {
               </Canvas>
             </GestureDetector>
             {/* Scrollbar here */}
+            <View className='h-[960px] w-[50px] bg-gray-200 relative flex items-center justify-center '>
+                { Array.from({ length: 24 }).map((_, i) => (
+                    <DotsNineIcon key={i} size={40} color="#1e1e1e50" weight='light' />
+                )) }
+            </View>
           </View>
 
-        </View>
+        </ScrollView>
         <View className="flex justify-end min-h-[8%]">
           <View className="flex-row w-full items-center justify-between">
             <View className=" flex-row items-center px-5 py-1 gap-2">
@@ -258,7 +269,7 @@ export default function NoteScreen() {
                       backgroundColor: "transparent",
                       opacity: 1,
                     }}
-                    popoverStyle={{ backgroundColor: "gray" }}
+                    popoverStyle={{ backgroundColor: "lightgreen", borderRadius: 20 }}
                     from={
                       <TouchableOpacity>
                         <View
