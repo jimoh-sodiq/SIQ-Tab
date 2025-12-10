@@ -27,7 +27,7 @@ import {
   PenIcon,
   ScribbleIcon
 } from "phosphor-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Alert, ScrollView, StatusBar, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import {
   Gesture,
@@ -37,6 +37,7 @@ import {
 import Popover from "react-native-popover-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ColorPicker, { Swatches } from "reanimated-color-picker";
+import uuid from 'react-native-uuid';
 
 interface CurrentPathData {
   path: SkPath;
@@ -99,9 +100,14 @@ export default function NoteScreen() {
 
   const [currentStrokeId, setCurrentStrokeId] = useState<string | null>(null);
 
+  const strokeIdRef = useRef<string | null>(null);
+
   const drawingGesture = Gesture.Pan()
     .onStart(({ x, y }) => {
-      // setCurrentStrokeId(Crypto.randomUUID());
+
+      const id = uuid.v4();
+      // setCurrentStrokeId(id);
+      strokeIdRef.current = id;
       const newPath = Skia.Path.Make();
       newPath.moveTo(x, y);
       const pathData = {
@@ -120,30 +126,34 @@ export default function NoteScreen() {
         color: activeToolSettings.color || "#000000",
         strokeWidth: activeToolSettings.strokeWidth || 3,
         tool: activeTool,
-        strokeId: currentStrokeId as string,
+        strokeId: id as string,
         mode: "draw"
       });
     })
     .onUpdate(({ x, y }) => {
+      if (!strokeIdRef.current) return;
       if (currentPath as any) {
         currentPath?.path?.lineTo(x, y);
         send({
           type: "stroke_move",
-          strokeId: currentStrokeId as string,
+          strokeId: strokeIdRef.current as string,
           x, y
         });
         setCurrentPath({ ...(currentPath as any) });
       }
     })
     .onEnd(() => {
-      send({
-        type: "stroke_end",
-        strokeId: currentStrokeId as string
-      });
+      if (strokeIdRef.current) {
+        send({
+          type: "stroke_end",
+          strokeId: strokeIdRef.current as string
+        });
+      };
       if (currentPath) {
         pushStroke(currentPath);
         setCurrentPath(null);
       }
+      strokeIdRef.current = null
       setCurrentStrokeId(null);
     })
     .runOnJS(true);
