@@ -39,14 +39,14 @@ export const useToolStore = create<Store>((set, get) => ({
 
   // PEN SETTINGS
   ballpoint: {
-    strokeWidth: 3,
+    strokeWidth: 2,
     color: "#000000",
     opacity: 1,
     style: "stroke", // fill or stroke
   },
 
   eraser: {
-    strokeWidth: 20,
+    strokeWidth: 10,
     color: "white", // use background color
     mode: "stroke",
     opacity: 1,

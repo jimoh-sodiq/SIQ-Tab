@@ -7,6 +7,7 @@ import { DrawingTool, StrokeStartEvent } from "@/types";
 import Slider from "@react-native-community/slider";
 import {
   Canvas,
+  CornerPathEffect,
   Line,
   Path,
   Skia,
@@ -27,7 +28,7 @@ import {
   PenIcon,
   ScribbleIcon
 } from "phosphor-react-native";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Alert, ScrollView, StatusBar, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import {
   Gesture,
@@ -90,17 +91,57 @@ export default function NoteScreen() {
       : "rounded-full   w-fit p-2";
   };
 
-  const swipeGesture = Gesture.Fling().onStart(({ x, y }) => {
-
-  }).onEnd(() => {
-    if (isReadMode) {
-      goToPage(currentPage + 1)
-    }
-  })
-
   const [currentStrokeId, setCurrentStrokeId] = useState<string | null>(null);
 
   const strokeIdRef = useRef<string | null>(null);
+
+  const startPointRef = useRef<{ x: number; y: number } | null>(null);
+  const hasMovedRef = useRef(false);
+
+  const tapGesture = Gesture.Tap()
+    .numberOfTaps(1)
+    .maxDuration(250) // tune: quick tap
+    .onStart((evt) => {
+      // store start point (useful if you want onEnd)
+      startPointRef.current = { x: evt.x, y: evt.y };
+    })
+    .onEnd((evt, success) => {
+      if (!success) return;
+      const x = evt.x ?? startPointRef.current?.x ?? 0;
+      const y = evt.y ?? startPointRef.current?.y ?? 0;
+
+      // create dot path
+      const radius = (activeToolSettings.strokeWidth || 3) / 2 + 0.5; // small extra for visibility
+      const dotPath = Skia.Path.Make();
+      dotPath.addCircle(x, y, radius);
+
+      const dotStroke = {
+        path: dotPath,
+        color: activeTool === "eraser" ? "white" : activeToolSettings.color,
+        strokeWidth: activeToolSettings.strokeWidth,
+      };
+
+      // push local history
+      pushStroke(dotStroke);
+
+      // send a dot event to server/other clients
+      send({
+        type: "stroke_dot",
+        strokeId: uuid.v4(),
+        x,
+        y,
+        color: dotStroke.color as any,
+        strokeWidth: dotStroke.strokeWidth as number,
+        page: currentPage,
+      });
+
+      // cleanup
+      startPointRef.current = null;
+      hasMovedRef.current = false;
+      strokeIdRef.current = null;
+    })
+    .runOnJS(true)
+
 
   const drawingGesture = Gesture.Pan()
     .onStart(({ x, y }) => {
@@ -124,7 +165,7 @@ export default function NoteScreen() {
         x,
         y,
         color: activeToolSettings.color || "#000000",
-        strokeWidth: activeToolSettings.strokeWidth || 3,
+        strokeWidth: activeToolSettings.strokeWidth || 2,
         tool: activeTool,
         strokeId: id as string,
         mode: "draw"
@@ -157,7 +198,6 @@ export default function NoteScreen() {
       setCurrentStrokeId(null);
     })
     .runOnJS(true);
-
 
   const saveImage = async () => {
     const image = canvasRef.current?.makeImageSnapshot();
@@ -194,7 +234,7 @@ export default function NoteScreen() {
   const scrollerRef = useRef<ScrollView>(null)
 
   useEffect(() => {
-    scrollerRef.current?.scrollTo({x: 0, y: 0, animated: false})
+    scrollerRef.current?.scrollTo({ x: 0, y: 0, animated: false })
   }, [currentPage])
 
   return (
@@ -204,10 +244,9 @@ export default function NoteScreen() {
 
         <NoteHeader clearEvent={() => send({ type: "clear_page", page: currentPage })} />
         <ScrollView ref={scrollerRef} indicatorStyle='white' persistentScrollbar={true} showsVerticalScrollIndicator={true} contentContainerStyle={{ justifyContent: "center" }} >
-          {/* <View className="h-[10%]" /> */}
 
-          <View className="flex-1 max-w-[960px] h-[960px] flex-row mx-auto border-[1px] w-full">
-            <GestureDetector gesture={isReadMode ? swipeGesture : drawingGesture}>
+          <View className="flex-1 h-[960px] flex-row mx-auto border-[1px] w-full">
+            <GestureDetector gesture={Gesture.Race(tapGesture, drawingGesture)}>
               <Canvas
                 style={{
                   flex: 1,
@@ -223,7 +262,10 @@ export default function NoteScreen() {
                     color={item.color}
                     strokeWidth={item.strokeWidth}
                     style="stroke"
-                  />
+                    strokeCap='round'
+                  >
+                    <CornerPathEffect r={64} />
+                  </Path>
                 ))}
 
                 {/* Live stroke */}
@@ -233,11 +275,14 @@ export default function NoteScreen() {
                     color={activeToolSettings.color}
                     style="stroke"
                     strokeWidth={activeToolSettings.strokeWidth}
-                  />
+                    strokeCap='round'
+                  >
+                    <CornerPathEffect r={64} />
+                  </Path>
                 )}
 
                 {Array.from({ length: 100 }).map((_, i) => {
-                  const y = i * 40; // line spacing (adjust)
+                  const y = i * 50; // line spacing (adjust)
                   return (
                     <Line
                       key={`line-${i}`}
@@ -253,9 +298,9 @@ export default function NoteScreen() {
             </GestureDetector>
             {/* Scrollbar here */}
             <View className='h-[960px] w-[50px] bg-gray-200 relative flex items-center justify-center '>
-                { Array.from({ length: 24 }).map((_, i) => (
-                    <DotsNineIcon key={i} size={40} color="#1e1e1e50" weight='light' />
-                )) }
+              {Array.from({ length: 24 }).map((_, i) => (
+                <DotsNineIcon key={i} size={40} color="#1e1e1e50" weight='light' />
+              ))}
             </View>
           </View>
 
